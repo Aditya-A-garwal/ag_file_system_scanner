@@ -5,6 +5,9 @@ edition = "2021"
 license = "MIT"
 license-file = "LICENSE"
 categories = ["command-line-utilities"]
+readme = "README.md"
+description = "A nifty command line tool to scan and search through the filesystem and get the sizes of directories"
+repository = "https://github.com/Aditya-A-garwal/ag_file_system_scanner"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
