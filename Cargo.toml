@@ -1,6 +1,6 @@
 [package]
 name = "ag_file_system_scanner"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 license-file = "LICENSE"
 categories = ["command-line-utilities"]
