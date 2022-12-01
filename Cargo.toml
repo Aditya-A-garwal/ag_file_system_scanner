@@ -2,7 +2,6 @@
 name = "ag_file_system_scanner"
 version = "0.1.0"
 edition = "2021"
-license = "MIT"
 license-file = "LICENSE"
 categories = ["command-line-utilities"]
 readme = "README.md"
@@ -13,3 +12,7 @@ repository = "https://github.com/Aditya-A-garwal/ag_file_system_scanner"
 
 [dependencies]
 chrono = "0.4.23"
+
+[[bin]]
+name = "fss"
+path = "src/main.rs"
