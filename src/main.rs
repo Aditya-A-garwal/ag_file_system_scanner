@@ -402,6 +402,7 @@ fn calc_dir_size(p_init_dir_path: &path::Path, p_dir_path: &path::Path) -> Optio
     return Some(res);
 }
 
+#[cfg(target_family = "unix")]
 /// Prints a symlink without indentation
 ///
 /// Returns `false` if the symlink could be logged, `true` otherwise
@@ -432,12 +433,10 @@ fn show_symlink_noindent(
         }
     };
 
-    #[cfg(target_family = "unix")]
     if get_option(PrgOptions::ShowPermissions) {
         print_permissions!(p_metadata);
     }
 
-    #[cfg(target_family = "unix")]
     if get_option(PrgOptions::ShowLasttime) {
         print_modif_time!(p_metadata, path);
     }
@@ -462,6 +461,58 @@ fn show_symlink_noindent(
     return false;
 }
 
+#[cfg(not(target_family = "unix"))]
+/// Prints a symlink without indentation
+///
+/// Returns `false` if the symlink could be logged, `true` otherwise
+///
+/// # Arguments
+///
+/// - `p_path_os` - reference to the entry's path
+/// - 'p_is_dir' - whether the target of the symlink is a directory or not
+fn show_symlink_noindent(
+    _p_metadata: &fs::Metadata,
+    p_path_os: &path::Path,
+    p_is_dir: bool,
+) -> bool {
+    // borrow the filename (silently skip the current entry if this could not be done)
+    let path = p_path_os.to_string_lossy();
+
+    // get the canonicalized path name (print the error and exit if this could not be done)
+    let dest_path = match p_path_os.canonicalize() {
+        Ok(dest_path) => dest_path,
+        Err(error) => {
+            if get_option(PrgOptions::ShowErrors) {
+                eprint!(
+                    "Error while reading target of symlink \"{}\"\n{}\n",
+                    path, error
+                );
+            }
+            return true;
+        }
+    };
+
+    // if the target is a directory, enclose the symlink and target within angle brackets <>
+    if p_is_dir {
+        print!(
+            "{:>20}    <{}> -> <{}>\n",
+            "SYMLINK",
+            path,
+            dest_path.to_string_lossy()
+        );
+    } else {
+        print!(
+            "{:>20}    {} -> {}\n",
+            "SYMLINK",
+            path,
+            dest_path.to_string_lossy()
+        );
+    }
+
+    return false;
+}
+
+#[cfg(target_family = "unix")]
 /// Prints a symlink with indentation
 ///
 /// Returns `false` if the symlink could be logged, true otherwise
@@ -497,12 +548,10 @@ fn show_symlink(
         }
     };
 
-    #[cfg(target_family = "unix")]
     if get_option(PrgOptions::ShowPermissions) {
         print_permissions!(p_metadata);
     }
 
-    #[cfg(target_family = "unix")]
     if get_option(PrgOptions::ShowLasttime) {
         print_modif_time!(p_metadata, path.to_string_lossy());
     }
@@ -529,6 +578,65 @@ fn show_symlink(
     return false;
 }
 
+#[cfg(not(target_family = "unix"))]
+/// Prints a symlink with indentation
+///
+/// Returns `false` if the symlink could be logged, true otherwise
+///
+/// # Arguments
+///
+/// - 'p_indent_width' - number of spaces to leave before printing the entry
+/// - `p_path_os` - reference to the entry's path
+/// - 'p_is_dir' - whether the target of the symlink is a directory or not
+fn show_symlink(
+    p_indent_width: usize,
+    _p_metadata: &fs::Metadata,
+    p_path_os: &path::Path,
+    p_is_dir: bool,
+) -> bool {
+    // borrow the filename (silently skip the current entry if this could not be done)
+    let Some(path) = p_path_os.file_name() else {
+        return true;
+    };
+
+    // get the canonicalized path name
+    let dest_path = match p_path_os.canonicalize() {
+        Ok(dest_path) => dest_path,
+        Err(error) => {
+            if get_option(PrgOptions::ShowErrors) {
+                eprint!(
+                    "Error while reading target of symlink \"{}\"\n{}\n",
+                    path.to_string_lossy(),
+                    error
+                );
+            }
+            return true;
+        }
+    };
+
+    // if the target is a directory, enclose the symlink and the target within angled brackets <>
+    if p_is_dir {
+        print!(
+            "{:>20}    {:p_indent_width$}<{}> -> <{}>\n",
+            "SYMLINK",
+            "",
+            path.to_string_lossy(),
+            dest_path.to_string_lossy()
+        );
+    } else {
+        print!(
+            "{:>20}    {:p_indent_width$}{} -> {}\n",
+            "SYMLINK",
+            "",
+            path.to_string_lossy(),
+            dest_path.to_string_lossy()
+        );
+    }
+
+    return false;
+}
+
+#[cfg(target_family = "unix")]
 /// Prints a file without indentation
 ///
 /// Returns `false` if the file could be logged, `true` otherwise
@@ -543,15 +651,41 @@ fn show_file_noindent(p_metadata: &fs::Metadata, p_path_os: &path::Path, p_file_
         return true;
     };
 
-    #[cfg(target_family = "unix")]
     if get_option(PrgOptions::ShowPermissions) {
         print_permissions!(p_metadata);
     }
 
-    #[cfg(target_family = "unix")]
     if get_option(PrgOptions::ShowLasttime) {
         print_modif_time!(p_metadata, path.to_string_lossy());
     }
+
+    print!(
+        "{:>20}    {}\n",
+        int_to_formatted_slice(*p_file_len),
+        path.to_string_lossy()
+    );
+
+    return false;
+}
+
+#[cfg(not(target_family = "unix"))]
+/// Prints a file without indentation
+///
+/// Returns `false` if the file could be logged, `true` otherwise
+///
+/// # Arguments
+///
+/// - 'p_indent_width' - number of spaces to leave before printing the entry
+/// - `p_path_os` - reference to the entry's path
+/// - 'p_file_len' - length of the file (in bytes)
+fn show_file_noindent(
+    _p_metadata: &fs::Metadata,
+    p_path_os: &path::Path,
+    p_file_len: &u64,
+) -> bool {
+    let Ok(path) = p_path_os.canonicalize() else {
+        return true;
+    };
 
     print!(
         "{:>20}    {}\n",
@@ -596,6 +730,7 @@ fn show_file(p_indent_width: usize, p_metadata: &fs::Metadata, p_path_os: &path:
     return false;
 }
 
+#[cfg(target_family = "unix")]
 /// Prints a directory without indentation
 ///
 /// Returns `false` if the directory could be logged, `true` otherwise
@@ -619,12 +754,10 @@ fn show_dir_noindent(p_metadata: &fs::Metadata, p_path_os: &path::Path) -> bool 
         ""
     };
 
-    #[cfg(target_family = "unix")]
     if get_option(PrgOptions::ShowPermissions) {
         print_permissions!(p_metadata);
     }
 
-    #[cfg(target_family = "unix")]
     if get_option(PrgOptions::ShowLasttime) {
         print_modif_time!(p_metadata, path.to_string_lossy());
     }
@@ -634,6 +767,36 @@ fn show_dir_noindent(p_metadata: &fs::Metadata, p_path_os: &path::Path) -> bool 
     return false;
 }
 
+#[cfg(not(target_family = "unix"))]
+/// Prints a directory without indentation
+///
+/// Returns `false` if the directory could be logged, `true` otherwise
+///
+/// # Arguments
+///
+/// - `p_path_os` - reference to the entry's path
+fn show_dir_noindent(_p_metadata: &fs::Metadata, p_path_os: &path::Path) -> bool {
+    let Ok(path) = p_path_os.canonicalize() else {
+        return true;
+    };
+
+    // see if the directory size needs to be printed (if yes, then check if it can be calculated)
+    let sz = if get_option(PrgOptions::ShowDirSize) {
+        if let Some(size) = calc_dir_size(&p_path_os, &p_path_os) {
+            int_to_formatted_slice(size)
+        } else {
+            "ERROR"
+        }
+    } else {
+        ""
+    };
+
+    print!("{:>20}    <{}>\n", sz, path.to_string_lossy());
+
+    return false;
+}
+
+#[cfg(not(target_family = "unix"))]
 /// Prints a directory with indentation
 ///
 /// Returns `false` if the directory could be logged, `true` otherwise
@@ -642,7 +805,7 @@ fn show_dir_noindent(p_metadata: &fs::Metadata, p_path_os: &path::Path) -> bool 
 ///
 /// - 'p_indent_width' - number of spaces to leave before printing the entry
 /// - `p_path_os` - reference to the entry's path
-fn show_dir(p_indent_width: usize, p_metadata: &fs::Metadata, p_path_os: &path::Path) -> bool {
+fn show_dir(p_indent_width: usize, _p_metadata: &fs::Metadata, p_path_os: &path::Path) -> bool {
     let Some(path) = p_path_os.file_name() else {
         return true;
     };
@@ -661,16 +824,6 @@ fn show_dir(p_indent_width: usize, p_metadata: &fs::Metadata, p_path_os: &path::
         ""
     };
 
-    #[cfg(target_family = "unix")]
-    if get_option(PrgOptions::ShowPermissions) {
-        print_permissions!(p_metadata);
-    }
-
-    #[cfg(target_family = "unix")]
-    if get_option(PrgOptions::ShowLasttime) {
-        print_modif_time!(p_metadata, path.to_string_lossy());
-    }
-
     print!(
         "{:>20}    {:p_indent_width$}<{}>\n",
         sz,
@@ -681,6 +834,9 @@ fn show_dir(p_indent_width: usize, p_metadata: &fs::Metadata, p_path_os: &path::
     return false;
 }
 
+#[cfg(target_family = "unix")]
+/// Prints a directory without indentation
+///)]
 /// Prints a special file without indentation
 ///
 /// Returns `false` if the special file could be logged, `true` otherwise
@@ -698,23 +854,17 @@ fn show_special_noindent(
     };
 
     let special_type = match p_special_file_type {
-        #[cfg(target_family = "unix")]
         SpecialFileType::Socket => "SOCKET",
-        #[cfg(target_family = "unix")]
         SpecialFileType::BlockDevice => "BLOCK DEVICE",
-        #[cfg(target_family = "unix")]
         SpecialFileType::CharDevice => "CHAR DEVICE",
-        #[cfg(target_family = "unix")]
         SpecialFileType::Fifo => "FIFO PIPE",
         _ => "SPECIAL",
     };
 
-    #[cfg(target_family = "unix")]
     if get_option(PrgOptions::ShowPermissions) {
         print_permissions!(p_metadata);
     }
 
-    #[cfg(target_family = "unix")]
     if get_option(PrgOptions::ShowLasttime) {
         print_modif_time!(p_metadata, path.to_string_lossy());
     }
@@ -723,6 +873,32 @@ fn show_special_noindent(
     return false;
 }
 
+#[cfg(not(target_family = "unix"))]
+/// Prints a directory without indentation
+///)]
+/// Prints a special file without indentation
+///
+/// Returns `false` if the special file could be logged, `true` otherwise
+///
+/// # Arguments
+///
+/// - `p_path_os` - reference to the entry's path
+fn show_special_noindent(
+    _p_metadata: &fs::Metadata,
+    p_path_os: &path::Path,
+    _p_special_file_type: &SpecialFileType,
+) -> bool {
+    let Ok(path) = p_path_os.canonicalize() else {
+        return true;
+    };
+
+    let special_type = "SPECAL";
+
+    print!("{:>20}    {}\n", special_type, path.to_string_lossy());
+    return false;
+}
+
+#[cfg(target_family = "unix")]
 /// Prints a directory with indentation
 ///
 /// Returns `false` if the special file could be logged, `true` otherwise
@@ -742,26 +918,50 @@ fn show_special(
     };
 
     let special_type = match p_special_file_type {
-        #[cfg(target_family = "unix")]
         SpecialFileType::Socket => "SOCKET",
-        #[cfg(target_family = "unix")]
         SpecialFileType::BlockDevice => "BLOCK DEVICE",
-        #[cfg(target_family = "unix")]
         SpecialFileType::CharDevice => "CHAR DEVICE",
-        #[cfg(target_family = "unix")]
         SpecialFileType::Fifo => "FIFO PIPE",
         _ => "SPECIAL",
     };
 
-    #[cfg(target_family = "unix")]
     if get_option(PrgOptions::ShowPermissions) {
         print_permissions!(p_metadata);
     }
 
-    #[cfg(target_family = "unix")]
     if get_option(PrgOptions::ShowLasttime) {
         print_modif_time!(p_metadata, path.to_string_lossy());
     }
+
+    print!(
+        "{:>20}    {:p_indent_width$}{}\n",
+        special_type,
+        "",
+        path.to_string_lossy()
+    );
+    return false;
+}
+
+#[cfg(not(target_family = "unix"))]
+/// Prints a directory with indentation
+///
+/// Returns `false` if the special file could be logged, `true` otherwise
+///
+/// # Arguments
+///
+/// - 'p_indent_width' - number of spaces to leave before printing the entry
+/// - `p_path_os` - reference to the entry's path
+fn show_special(
+    p_indent_width: usize,
+    _p_metadata: &fs::Metadata,
+    p_path_os: &path::Path,
+    _p_special_file_type: &SpecialFileType,
+) -> bool {
+    let Some(path) = p_path_os.file_name() else {
+        return true;
+    };
+
+    let special_type = "SPECIAL";
 
     print!(
         "{:>20}    {:p_indent_width$}{}\n",
