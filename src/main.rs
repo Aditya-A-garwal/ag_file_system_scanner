@@ -17,6 +17,7 @@ const MAX_FMT_INT_LEN: usize = 32;
 const INDENT_COL_WIDTH: usize = 4;
 
 /// Array of permissions strings indexed by mode value
+#[cfg(target_family = "unix")]
 const MODE_FMT: [&str; 8] = ["---", "--x", "-w-", "-wx", "r--", "r-x", "rw-", "rwx"];
 
 /// Bitmask to contain the options set by the user
@@ -27,8 +28,10 @@ enum PrgOptions {
     /// Option that specifies if directories should be recursively scanned and displayed
     ShowRecursive = 0,
     /// Option that specified if the permissions of a filesystem entry should be printed
+    #[cfg(target_family = "unix")]
     ShowPermissions = 1,
     /// Option that specified if the last modification time of a file or directory should be printed
+    #[cfg(target_family = "unix")]
     ShowLasttime = 2,
     /// Option that specifies if the absolute paths of all entries should be printed without indentation
     ShowAbsnoindent = 3,
@@ -54,9 +57,13 @@ enum PrgOptions {
 /// Enumerates all the special file types, or not applicable
 #[derive(PartialEq)]
 enum SpecialFileType {
+    #[cfg(target_family = "unix")]
     Socket,
+    #[cfg(target_family = "unix")]
     BlockDevice,
+    #[cfg(target_family = "unix")]
     CharDevice,
+    #[cfg(target_family = "unix")]
     Fifo,
     NA,
 }
@@ -350,7 +357,6 @@ fn calc_dir_size(p_init_dir_path: &path::Path, p_dir_path: &path::Path) -> Optio
     let mut res: u64 = 0;
 
     for entry in entries {
-
         // if the current enty could not be read, silently skip it
         let Ok(entry) = entry else {
             continue;
@@ -426,10 +432,12 @@ fn show_symlink_noindent(
         }
     };
 
+    #[cfg(target_family = "unix")]
     if get_option(PrgOptions::ShowPermissions) {
         print_permissions!(p_metadata);
     }
 
+    #[cfg(target_family = "unix")]
     if get_option(PrgOptions::ShowLasttime) {
         print_modif_time!(p_metadata, path);
     }
@@ -489,10 +497,12 @@ fn show_symlink(
         }
     };
 
+    #[cfg(target_family = "unix")]
     if get_option(PrgOptions::ShowPermissions) {
         print_permissions!(p_metadata);
     }
 
+    #[cfg(target_family = "unix")]
     if get_option(PrgOptions::ShowLasttime) {
         print_modif_time!(p_metadata, path.to_string_lossy());
     }
@@ -533,10 +543,12 @@ fn show_file_noindent(p_metadata: &fs::Metadata, p_path_os: &path::Path, p_file_
         return true;
     };
 
+    #[cfg(target_family = "unix")]
     if get_option(PrgOptions::ShowPermissions) {
         print_permissions!(p_metadata);
     }
 
+    #[cfg(target_family = "unix")]
     if get_option(PrgOptions::ShowLasttime) {
         print_modif_time!(p_metadata, path.to_string_lossy());
     }
@@ -564,10 +576,12 @@ fn show_file(p_indent_width: usize, p_metadata: &fs::Metadata, p_path_os: &path:
         return true;
     };
 
+    #[cfg(target_family = "unix")]
     if get_option(PrgOptions::ShowPermissions) {
         print_permissions!(p_metadata);
     }
 
+    #[cfg(target_family = "unix")]
     if get_option(PrgOptions::ShowLasttime) {
         print_modif_time!(p_metadata, path.to_string_lossy());
     }
@@ -605,10 +619,12 @@ fn show_dir_noindent(p_metadata: &fs::Metadata, p_path_os: &path::Path) -> bool 
         ""
     };
 
+    #[cfg(target_family = "unix")]
     if get_option(PrgOptions::ShowPermissions) {
         print_permissions!(p_metadata);
     }
 
+    #[cfg(target_family = "unix")]
     if get_option(PrgOptions::ShowLasttime) {
         print_modif_time!(p_metadata, path.to_string_lossy());
     }
@@ -645,10 +661,12 @@ fn show_dir(p_indent_width: usize, p_metadata: &fs::Metadata, p_path_os: &path::
         ""
     };
 
+    #[cfg(target_family = "unix")]
     if get_option(PrgOptions::ShowPermissions) {
         print_permissions!(p_metadata);
     }
 
+    #[cfg(target_family = "unix")]
     if get_option(PrgOptions::ShowLasttime) {
         print_modif_time!(p_metadata, path.to_string_lossy());
     }
@@ -680,17 +698,23 @@ fn show_special_noindent(
     };
 
     let special_type = match p_special_file_type {
+        #[cfg(target_family = "unix")]
         SpecialFileType::Socket => "SOCKET",
+        #[cfg(target_family = "unix")]
         SpecialFileType::BlockDevice => "BLOCK DEVICE",
+        #[cfg(target_family = "unix")]
         SpecialFileType::CharDevice => "CHAR DEVICE",
+        #[cfg(target_family = "unix")]
         SpecialFileType::Fifo => "FIFO PIPE",
         _ => "SPECIAL",
     };
 
+    #[cfg(target_family = "unix")]
     if get_option(PrgOptions::ShowPermissions) {
         print_permissions!(p_metadata);
     }
 
+    #[cfg(target_family = "unix")]
     if get_option(PrgOptions::ShowLasttime) {
         print_modif_time!(p_metadata, path.to_string_lossy());
     }
@@ -718,17 +742,23 @@ fn show_special(
     };
 
     let special_type = match p_special_file_type {
+        #[cfg(target_family = "unix")]
         SpecialFileType::Socket => "SOCKET",
+        #[cfg(target_family = "unix")]
         SpecialFileType::BlockDevice => "BLOCK DEVICE",
+        #[cfg(target_family = "unix")]
         SpecialFileType::CharDevice => "CHAR DEVICE",
+        #[cfg(target_family = "unix")]
         SpecialFileType::Fifo => "FIFO PIPE",
         _ => "SPECIAL",
     };
 
+    #[cfg(target_family = "unix")]
     if get_option(PrgOptions::ShowPermissions) {
         print_permissions!(p_metadata);
     }
 
+    #[cfg(target_family = "unix")]
     if get_option(PrgOptions::ShowLasttime) {
         print_modif_time!(p_metadata, path.to_string_lossy());
     }
@@ -785,7 +815,8 @@ fn scan_path(
         let path_os = entry.path();
 
         // check for special file (on unix style operating systems, get the specific type as well)
-        let special_file_type = if cfg!(target_family = "unix") {
+        #[cfg(target_family = "unix")]
+        let special_file_type = {
             use std::os::unix::fs::FileTypeExt;
 
             if metadata.file_type().is_socket() {
@@ -799,9 +830,10 @@ fn scan_path(
             } else {
                 SpecialFileType::NA
             }
-        } else {
-            SpecialFileType::NA
         };
+
+        #[cfg(not(target_family = "unix"))]
+        let special_file_type = SpecialFileType::NA;
 
         if metadata.is_symlink() {
             cur_entry_cnts.inc_symlink_cnt(1);
@@ -909,7 +941,6 @@ fn scan_path(
     // to be printed as a logical entry within the current directory
     // this is only to be done if the show absolute option is not set
     if !get_option(PrgOptions::ShowAbsnoindent) {
-
         // the total size of the files only needs to be printd if the show size option is set for directories
         // this is because the aggregated files are shown as a logical directory entry (as if the files were within another directory)
         // if the option was set, print the formatted size, otherwise print and empty string
@@ -923,9 +954,11 @@ fn scan_path(
 
         // if the show files option is not set and there are special files, group them together and show the count
         if !get_option(PrgOptions::ShowFiles) && cur_entry_cnts.get_file_cnt() != 0 {
+            #[cfg(target_family = "unix")]
             if get_option(PrgOptions::ShowPermissions) {
                 print!("            ");
             }
+            #[cfg(target_family = "unix")]
             if get_option(PrgOptions::ShowLasttime) {
                 print!("{:FMT_TIME_WIDTH$}", ' ');
             }
@@ -939,9 +972,11 @@ fn scan_path(
 
         // if the show symlinks option is not set and there are special files, group them together and show the count
         if !get_option(PrgOptions::ShowSymlinks) && cur_entry_cnts.get_symlink_cnt() != 0 {
+            #[cfg(target_family = "unix")]
             if get_option(PrgOptions::ShowPermissions) {
                 print!("            ");
             }
+            #[cfg(target_family = "unix")]
             if get_option(PrgOptions::ShowLasttime) {
                 print!("{:FMT_TIME_WIDTH$}", ' ');
             }
@@ -955,6 +990,7 @@ fn scan_path(
 
         // if the show special option is not set and there are special files, group them together and show the count
         if !get_option(PrgOptions::ShowSpecial) && cur_entry_cnts.get_special_cnt() != 0 {
+            #[cfg(target_family = "unix")]
             if get_option(PrgOptions::ShowPermissions) {
                 print!("            ");
             }
@@ -1019,8 +1055,9 @@ fn search_path(
         // get the path to the current entry
         let path_os = entry.path();
 
-        // check for special file
-        let special_file_type = if cfg!(target_family = "unix") {
+        // check for special file (on unix style operating systems, get the specific type as well)
+        #[cfg(target_family = "unix")]
+        let special_file_type = {
             use std::os::unix::fs::FileTypeExt;
 
             if metadata.file_type().is_socket() {
@@ -1034,9 +1071,10 @@ fn search_path(
             } else {
                 SpecialFileType::NA
             }
-        } else {
-            SpecialFileType::NA
         };
+
+        #[cfg(not(target_family = "unix"))]
+        let special_file_type = SpecialFileType::NA;
 
         let matches = if get_option(PrgOptions::SearchNoext) {
             // get the filename of this entry without the extension
@@ -1397,9 +1435,10 @@ fn main() {
                 print!("No Search Pattern provided after {} flag\n", arg);
                 process::exit(-1);
             }
-        } else if cfg!(target_family = "unix") && (arg == "-p" || arg == "--permissions") {
+        } else if arg == "-p" || arg == "--permissions" {
+            #[cfg(target_family = "unix")]
             set_option(PrgOptions::ShowPermissions);
-        } else if cfg!(target_family = "unix") && (arg == "-t" || arg == "--modification-time") {
+            #[cfg(target_family = "unix")]
             set_option(PrgOptions::ShowLasttime);
         } else {
             print!("Ignoring unknown option {}\n", arg);
