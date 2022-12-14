@@ -402,6 +402,18 @@ fn calc_dir_size(p_init_dir_path: &path::Path, p_dir_path: &path::Path) -> Optio
     return Some(res);
 }
 
+#[cfg(not(target_family = "unix"))]
+fn adjust_verbatim_unc(p_path: &str) -> &str {
+    const VERBATIM_UNC_PREFIX: &str = r#"\\?\"#;
+    const VERBATIM_UNC_PREFIX_LEN: usize = VERBATIM_UNC_PREFIX.len();
+
+    if p_path.starts_with(VERBATIM_UNC_PREFIX) {
+        return &p_path[VERBATIM_UNC_PREFIX_LEN..];
+    }
+
+    return p_path;
+}
+
 #[cfg(target_family = "unix")]
 /// Prints a symlink without indentation
 ///
@@ -492,20 +504,22 @@ fn show_symlink_noindent(
         }
     };
 
+    let dest_path = dest_path.to_string_lossy();
+
     // if the target is a directory, enclose the symlink and target within angle brackets <>
     if p_is_dir {
         print!(
             "{:>20}    <{}> -> <{}>\n",
             "SYMLINK",
-            path,
-            dest_path.to_string_lossy()
+            adjust_verbatim_unc(&path),
+            adjust_verbatim_unc(&dest_path)
         );
     } else {
         print!(
             "{:>20}    {} -> {}\n",
             "SYMLINK",
-            path,
-            dest_path.to_string_lossy()
+            adjust_verbatim_unc(&path),
+            adjust_verbatim_unc(&dest_path)
         );
     }
 
@@ -687,10 +701,12 @@ fn show_file_noindent(
         return true;
     };
 
+    let path = path.to_string_lossy();
+
     print!(
         "{:>20}    {}\n",
         int_to_formatted_slice(*p_file_len),
-        path.to_string_lossy()
+        adjust_verbatim_unc(&path)
     );
 
     return false;
@@ -780,6 +796,8 @@ fn show_dir_noindent(_p_metadata: &fs::Metadata, p_path_os: &path::Path) -> bool
         return true;
     };
 
+    let path = path.to_string_lossy();
+
     // see if the directory size needs to be printed (if yes, then check if it can be calculated)
     let sz = if get_option(PrgOptions::ShowDirSize) {
         if let Some(size) = calc_dir_size(&p_path_os, &p_path_os) {
@@ -791,7 +809,7 @@ fn show_dir_noindent(_p_metadata: &fs::Metadata, p_path_os: &path::Path) -> bool
         ""
     };
 
-    print!("{:>20}    <{}>\n", sz, path.to_string_lossy());
+    print!("{:>20}    <{}>\n", sz, adjust_verbatim_unc(&path));
 
     return false;
 }
@@ -892,9 +910,11 @@ fn show_special_noindent(
         return true;
     };
 
+    let path = path.to_string_lossy();
+
     let special_type = "SPECAL";
 
-    print!("{:>20}    {}\n", special_type, path.to_string_lossy());
+    print!("{:>20}    {}\n", special_type, adjust_verbatim_unc(&path));
     return false;
 }
 
