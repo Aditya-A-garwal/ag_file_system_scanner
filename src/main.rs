@@ -246,8 +246,7 @@ macro_rules! print_modif_time {
 ///
 /// # Arguments
 ///
-/// - `p_option_mask` - stores each option as a single bit in the bitmask
-/// - `p_bit` - the index of the bit/option to be set
+/// - `p_bit` - the bit/option to be set
 fn set_option(p_bit: PrgOptions) {
     unsafe {
         OPTION_MASK |= 1usize << (p_bit as usize);
@@ -258,8 +257,7 @@ fn set_option(p_bit: PrgOptions) {
 ///
 /// # Arguments
 ///
-/// - `p_option_mask` - stores each option as a single bit in the bitmask
-/// - `p_bit` - the index of the bit/option to check
+/// - `p_bit` - the bit/option to be polled
 ///
 /// # Returns
 ///
@@ -272,8 +270,7 @@ fn get_option(p_bit: PrgOptions) -> bool {
 ///
 /// # Arguments
 ///
-/// - `p_option_mask` - stores each option as a single bit in the bitmask
-/// - `p_bit` - the index of the bit/option to be set
+/// - `p_bit` - the bit/option to be unset
 #[allow(dead_code)]
 fn clear_option(p_bit: PrgOptions) {
     unsafe {
@@ -337,7 +334,8 @@ where
 ///
 /// # Arguments
 ///
-/// - `p_option_mask`
+/// - `p_init_dir_path' - the initial directory whose size is to be calculated
+/// - 'p_dir_path' - the current directory whose size is to be calculated
 fn calc_dir_size(p_init_dir_path: &path::Path, p_dir_path: &path::Path) -> Option<u64> {
     let entries = match fs::read_dir(&p_dir_path) {
         Ok(values) => values,
@@ -403,6 +401,11 @@ fn calc_dir_size(p_init_dir_path: &path::Path, p_dir_path: &path::Path) -> Optio
 }
 
 #[cfg(not(target_family = "unix"))]
+/// Removes the verbatim "\\?\" prefix in UNC paths on windows
+///
+/// # Arguments
+///
+/// - 'p_path' - the path from which the verbatim prefix is to be removed
 fn adjust_verbatim_unc(p_path: &str) -> &str {
     const VERBATIM_UNC_PREFIX: &str = r#"\\?\"#;
     const VERBATIM_UNC_PREFIX_LEN: usize = VERBATIM_UNC_PREFIX.len();
@@ -421,6 +424,7 @@ fn adjust_verbatim_unc(p_path: &str) -> &str {
 ///
 /// # Arguments
 ///
+/// - 'p_metadata' - reference to the metadata of the symlink entry (used for getting the destination)
 /// - `p_path_os` - reference to the entry's path
 /// - 'p_is_dir' - whether the target of the symlink is a directory or not
 fn show_symlink_noindent(
@@ -480,6 +484,7 @@ fn show_symlink_noindent(
 ///
 /// # Arguments
 ///
+/// - 'p_metadata' - reference to the metadata of the symlink entry (used for getting the destination)
 /// - `p_path_os` - reference to the entry's path
 /// - 'p_is_dir' - whether the target of the symlink is a directory or not
 fn show_symlink_noindent(
@@ -534,6 +539,7 @@ fn show_symlink_noindent(
 /// # Arguments
 ///
 /// - 'p_indent_width' - number of spaces to leave before printing the entry
+/// - 'p_metadata' - reference to the metadata of the symlink entry (used for getting the destination)
 /// - `p_path_os` - reference to the entry's path
 /// - 'p_is_dir' - whether the target of the symlink is a directory or not
 fn show_symlink(
@@ -600,6 +606,7 @@ fn show_symlink(
 /// # Arguments
 ///
 /// - 'p_indent_width' - number of spaces to leave before printing the entry
+/// - '_p_metadata' - reference to the metadata of the symlink entry (used for getting the destination)
 /// - `p_path_os` - reference to the entry's path
 /// - 'p_is_dir' - whether the target of the symlink is a directory or not
 fn show_symlink(
@@ -657,6 +664,7 @@ fn show_symlink(
 ///
 /// # Arguments
 ///
+/// - 'p_metadata' - reference to the metadata of the file entry (used for printing length)
 /// - 'p_indent_width' - number of spaces to leave before printing the entry
 /// - `p_path_os` - reference to the entry's path
 /// - 'p_file_len' - length of the file (in bytes)
@@ -689,6 +697,7 @@ fn show_file_noindent(p_metadata: &fs::Metadata, p_path_os: &path::Path, p_file_
 ///
 /// # Arguments
 ///
+/// - 'p_metadata' - reference to the metadata of the file entry (used for printing length)
 /// - 'p_indent_width' - number of spaces to leave before printing the entry
 /// - `p_path_os` - reference to the entry's path
 /// - 'p_file_len' - length of the file (in bytes)
@@ -719,6 +728,7 @@ fn show_file_noindent(
 /// # Arguments
 ///
 /// - 'p_indent_width' - number of spaces to leave before printing the entry
+/// - 'p_metadata' - reference to the metadata of the file entry (used for printing length)
 /// - `p_path_os` - reference to the entry's path
 /// - 'p_file_len' - length of the file (in bytes)
 fn show_file(p_indent_width: usize, p_metadata: &fs::Metadata, p_path_os: &path::Path) -> bool {
@@ -753,6 +763,7 @@ fn show_file(p_indent_width: usize, p_metadata: &fs::Metadata, p_path_os: &path:
 ///
 /// # Arguments
 ///
+/// - 'p_metadata' - reference to the metadata of the directory entry (used for getting the last modification time)
 /// - `p_path_os` - reference to the entry's path
 fn show_dir_noindent(p_metadata: &fs::Metadata, p_path_os: &path::Path) -> bool {
     let Ok(path) = p_path_os.canonicalize() else {
@@ -790,6 +801,7 @@ fn show_dir_noindent(p_metadata: &fs::Metadata, p_path_os: &path::Path) -> bool 
 ///
 /// # Arguments
 ///
+/// - 'p_metadata' - reference to the metadata of the directory entry (used for getting the last modification time)
 /// - `p_path_os` - reference to the entry's path
 fn show_dir_noindent(_p_metadata: &fs::Metadata, p_path_os: &path::Path) -> bool {
     let Ok(path) = p_path_os.canonicalize() else {
@@ -822,6 +834,7 @@ fn show_dir_noindent(_p_metadata: &fs::Metadata, p_path_os: &path::Path) -> bool
 /// # Arguments
 ///
 /// - 'p_indent_width' - number of spaces to leave before printing the entry
+/// - 'p_metadata' - reference to the metadata of the directory entry (used for getting the last modification time)
 /// - `p_path_os` - reference to the entry's path
 fn show_dir(p_indent_width: usize, _p_metadata: &fs::Metadata, p_path_os: &path::Path) -> bool {
     let Some(path) = p_path_os.file_name() else {
@@ -853,15 +866,15 @@ fn show_dir(p_indent_width: usize, _p_metadata: &fs::Metadata, p_path_os: &path:
 }
 
 #[cfg(target_family = "unix")]
-/// Prints a directory without indentation
-///)]
 /// Prints a special file without indentation
 ///
 /// Returns `false` if the special file could be logged, `true` otherwise
 ///
 /// # Arguments
 ///
+/// - 'p_metadata' - reference to the metadata of the special file entry (used for getting the last modification time)
 /// - `p_path_os` - reference to the entry's path
+/// - 'p_special_file_type' - the type of special file ([SpecialFileType::NA] on windows)
 fn show_special_noindent(
     p_metadata: &fs::Metadata,
     p_path_os: &path::Path,
@@ -892,15 +905,15 @@ fn show_special_noindent(
 }
 
 #[cfg(not(target_family = "unix"))]
-/// Prints a directory without indentation
-///)]
 /// Prints a special file without indentation
 ///
 /// Returns `false` if the special file could be logged, `true` otherwise
 ///
 /// # Arguments
 ///
+/// - 'p_metadata' - reference to the metadata of the special file entry (used for getting the last modification time)
 /// - `p_path_os` - reference to the entry's path
+/// - 'p_special_file_type' - the type of special file ([SpecialFileType::NA] on windows)
 fn show_special_noindent(
     _p_metadata: &fs::Metadata,
     p_path_os: &path::Path,
@@ -926,7 +939,9 @@ fn show_special_noindent(
 /// # Arguments
 ///
 /// - 'p_indent_width' - number of spaces to leave before printing the entry
+/// - 'p_metadata' - reference to the metadata of the special file entry (used for getting the last modification time)
 /// - `p_path_os` - reference to the entry's path
+/// - 'p_special_file_type' - the type of special file ([SpecialFileType::NA] on windows)
 fn show_special(
     p_indent_width: usize,
     p_metadata: &fs::Metadata,
@@ -970,7 +985,9 @@ fn show_special(
 /// # Arguments
 ///
 /// - 'p_indent_width' - number of spaces to leave before printing the entry
+/// - 'p_metadata' - reference to the metadata of the special file entry (used for getting the last modification time)
 /// - `p_path_os` - reference to the entry's path
+/// - 'p_special_file_type' - the type of special file ([SpecialFileType::NA] on windows)
 fn show_special(
     p_indent_width: usize,
     _p_metadata: &fs::Metadata,
