@@ -33,8 +33,8 @@ enum PrgOptions {
     /// Option that specified if the last modification time of a file or directory should be printed
     #[cfg(target_family = "unix")]
     ShowLasttime = 2,
-    /// Option that specifies if the absolute paths of all entries should be printed without indentation
-    ShowAbsnoindent = 3,
+    /// Option that specifies if the entries should be printed as a tree
+    ShowTree = 3,
     /// Option that specifies if all files within a directory need to be individually displayed
     ShowFiles = 5,
     /// Option that specifies if all symlinks within a directory need to be individually displayed
@@ -1128,10 +1128,10 @@ fn scan_path(
 
             // depending on whether the absolute path (without indentation) needs to be printed,
             // try to print the current entry
-            let failed = if get_option(PrgOptions::ShowAbsnoindent) {
-                show_symlink_noindent(&metadata, &path_os, path_os.is_dir())
-            } else {
+            let failed = if get_option(PrgOptions::ShowTree) {
                 show_symlink(indent_width, &metadata, &path_os, path_os.is_dir())
+            } else {
+                show_symlink_noindent(&metadata, &path_os, path_os.is_dir())
             };
 
             // if the entry could not be printed, then remove its contribution from the counts
@@ -1151,10 +1151,10 @@ fn scan_path(
 
             // depending on whether the absolute path (without indentation) needs to be printed,
             // try to print the current entry
-            let failed = if get_option(PrgOptions::ShowAbsnoindent) {
-                show_file_noindent(&metadata, &path_os, &metadata.len())
-            } else {
+            let failed = if get_option(PrgOptions::ShowTree) {
                 show_file(indent_width, &metadata, &path_os)
+            } else {
+                show_file_noindent(&metadata, &path_os, &metadata.len())
             };
 
             // if the entry could not be counted, then remove its contribution from the counts
@@ -1166,10 +1166,10 @@ fn scan_path(
 
             // depending on whether the absolute path (without indentation) needs to be printed,
             // try to print the current entry
-            let failed = if get_option(PrgOptions::ShowAbsnoindent) {
-                show_dir_noindent(&metadata, &path_os)
-            } else {
+            let failed = if get_option(PrgOptions::ShowTree) {
                 show_dir(indent_width, &metadata, &path_os)
+            } else {
+                show_dir_noindent(&metadata, &path_os)
             };
 
             // if the entry could not be printed, then remove its contribution from the counts
@@ -1206,10 +1206,10 @@ fn scan_path(
 
             // depending on whether the absolute path (without indentation) needs to be printed,
             // try to print the current entry
-            let failed = if get_option(PrgOptions::ShowAbsnoindent) {
-                show_special_noindent(&metadata, &path_os, &special_file_type)
-            } else {
+            let failed = if get_option(PrgOptions::ShowTree) {
                 show_special(indent_width, &metadata, &path_os, &special_file_type)
+            } else {
+                show_special_noindent(&metadata, &path_os, &special_file_type)
             };
 
             // if the entry could not be printed, remove its contribution from the counts
@@ -1223,7 +1223,7 @@ fn scan_path(
     // for example, if the show files option is not set, the number of files along with their aggregated size needs
     // to be printed as a logical entry within the current directory
     // this is only to be done if the show absolute option is not set
-    if !get_option(PrgOptions::ShowAbsnoindent) {
+    if get_option(PrgOptions::ShowTree) {
         // the total size of the files only needs to be printd if the show size option is set for directories
         // this is because the aggregated files are shown as a logical directory entry (as if the files were within another directory)
         // if the option was set, print the formatted size, otherwise print and empty string
@@ -1674,8 +1674,8 @@ fn main() {
             set_option(PrgOptions::ShowSpecial);
         } else if arg == "-d" || arg == "--dir-size" {
             set_option(PrgOptions::ShowDirSize);
-        } else if arg == "-a" || arg == "--abs" {
-            set_option(PrgOptions::ShowAbsnoindent);
+        } else if arg == "--tree" {
+            set_option(PrgOptions::ShowTree);
         } else if arg == "-S" || arg == "--search" {
             if get_option(PrgOptions::SearchNoext) || get_option(PrgOptions::SearchContains) {
                 print!("Can only set one search mode at a time\n");
@@ -1744,20 +1744,20 @@ fn main() {
         \n\
         Options:\n\
         -r, --recursive             Recursively scan directories (can be followed by a positive integer to indicate the depth)\n\
-        -p, --permissions           Show Permissions of all entries\n\
-        -t, --modification-time     Show time of last modification of entries\n\
+        -p, --permissions           Print Permissions of each entry\n\
+        -t, --modification-time     Print the time when each entry was last modified\n\
         \n\
         -f, --files                 Show Regular Files (normally hidden)\n\
         -l, --symlinks              Show Symlinks (normally hidden)\n\
         -s, --special               Show Special Files such as sockets, pipes, etc. (normally hidden)\n\
         \n\
-        -d, --dir-size              Recursively calculate and display the size of each directory\n\
+        -d, --dir-size              Print directory sizes (calculated as the sum of sizes of all contained entries recursively)\n\
         \n\
-        -a, --abs                   Show the absolute path of each entry without any indentation\n\
+        '   --tree                  Show the entries as a tree\n\
         \n\
-        -S, --search                Only show entries whose name completely matches the following string completely\n    \
-            --search-noext          Only show entries whose name(except for the extension) matches the following string completely\n    \
-            --contains              Only show entries whose name contains the following string completely\n\
+        -S, --search <phrase>       Only show entries whose name completely matches phrase\n    \
+            --search-noext <phrase> Only show entries whose name(not counting the extension) completely matches phrase\n    \
+            --contains <phrase>     Only show entries whose name contains phrase\n\
         \n\
         -e, --show-err              Show errors\n\
         -h, --help                  Print Usage Instructions\n\
@@ -1779,13 +1779,13 @@ fn main() {
         -l, --symlinks              Show Symlinks (normally hidden)\n\
         -s, --special               Show Special Files such as sockets, pipes, etc. (normally hidden)\n\
         \n\
-        -d, --dir-size              Recursively calculate and display the size of each directory\n\
+        -d, --dir-size              Print directory sizes (calculated as the sum of sizes of all contained entries recursively)\n\
         \n\
-        -a, --abs                   Show the absolute path of each entry without any indentation\n\
+        '   --tree                  Show the entries as a tree\n\
         \n\
-        -S, --search                Only show entries whose name completely matches the following string completely\n    \
-            --search-noext          Only show entries whose name(except for the extension) matches the following string completely\n    \
-            --contains              Only show entries whose name contains the following string completely\n\
+        -S, --search <phrase>       Only show entries whose name completely matches phrase\n    \
+            --search-noext <phrase> Only show entries whose name(not counting the extension) completely matches phrase\n    \
+            --contains <phrase>     Only show entries whose name contains phrase\n\
         \n\
         -e, --show-err              Show errors\n\
         -h, --help                  Print Usage Instructions\n\
