@@ -1753,7 +1753,7 @@ fn main() {
         \n\
         -d, --dir-size              Print directory sizes (calculated as the sum of sizes of all contained entries recursively)\n\
         \n\
-            --no-tree               Show the entries as a tree\n\
+            --no-tree               Print the absolute path of each entry (without indendation) instead of tree form\n\
         \n\
         -S, --search <phrase>       Only show entries whose name completely matches phrase\n    \
             --search-noext <phrase> Only show entries whose name(not counting the extension) completely matches phrase\n    \
@@ -1781,7 +1781,7 @@ fn main() {
         \n\
         -d, --dir-size              Print directory sizes (calculated as the sum of sizes of all contained entries recursively)\n\
         \n\
-            --no-tree               Show the entries as a tree\n\
+            --no-tree               Print the absolute path of each entry (without indendation) instead of tree form\n\
         \n\
         -S, --search <phrase>       Only show entries whose name completely matches phrase\n    \
             --search-noext <phrase> Only show entries whose name(not counting the extension) completely matches phrase\n    \
