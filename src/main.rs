@@ -1752,7 +1752,7 @@ fn main() {
         -s, --special               Show Special Files such as sockets, pipes, etc. (normally hidden)\n\
         \n\
         -d, --dir-size              Print directory sizes (calculated as the sum of sizes of all contained entries recursively)\n\
-        \n\
+        \n    \
             --no-tree               Print the absolute path of each entry (without indendation) instead of tree form\n\
         \n\
         -S, --search <phrase>       Only show entries whose name completely matches phrase\n    \
@@ -1780,7 +1780,7 @@ fn main() {
         -s, --special               Show Special Files such as sockets, pipes, etc. (normally hidden)\n\
         \n\
         -d, --dir-size              Print directory sizes (calculated as the sum of sizes of all contained entries recursively)\n\
-        \n\
+        \n    \
             --no-tree               Print the absolute path of each entry (without indendation) instead of tree form\n\
         \n\
         -S, --search <phrase>       Only show entries whose name completely matches phrase\n    \
