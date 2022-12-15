@@ -826,6 +826,52 @@ fn show_dir_noindent(_p_metadata: &fs::Metadata, p_path_os: &path::Path) -> bool
     return false;
 }
 
+#[cfg(target_family = "unix")]
+/// Prints a directory with indentation
+///
+/// Returns `false` if the directory could be logged, `true` otherwise
+///
+/// # Arguments
+///
+/// - 'p_indent_width' - number of spaces to leave before printing the entry
+/// - `p_path_os` - reference to the entry's path
+fn show_dir(p_indent_width: usize, p_metadata: &fs::Metadata, p_path_os: &path::Path) -> bool {
+    let Some(path) = p_path_os.file_name() else {
+        return true;
+    };
+
+    // see if the directory size needs to be printed (if yes, then check if it can be calculated)
+    // if it need not be printed, simply put an empty string
+    // if it needs to be printed and can be calculated, format and print it
+    // it if needs to be printed and can not be calculated, print ERROR
+    let sz = if get_option(PrgOptions::ShowDirSize) {
+        if let Some(size) = calc_dir_size(&p_path_os, &p_path_os) {
+            int_to_formatted_slice(size)
+        } else {
+            "ERROR"
+        }
+    } else {
+        ""
+    };
+
+    if get_option(PrgOptions::ShowPermissions) {
+        print_permissions!(p_metadata);
+    }
+
+    if get_option(PrgOptions::ShowLasttime) {
+        print_modif_time!(p_metadata, path.to_string_lossy());
+    }
+
+    print!(
+        "{:>20}    {:p_indent_width$}<{}>\n",
+        sz,
+        "",
+        path.to_string_lossy()
+    );
+
+    return false;
+}
+
 #[cfg(not(target_family = "unix"))]
 /// Prints a directory with indentation
 ///
@@ -1675,6 +1721,7 @@ fn main() {
         } else if arg == "-p" || arg == "--permissions" {
             #[cfg(target_family = "unix")]
             set_option(PrgOptions::ShowPermissions);
+        } else if arg == "-t" || arg == "--modification-time" {
             #[cfg(target_family = "unix")]
             set_option(PrgOptions::ShowLasttime);
         } else {
